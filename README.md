@@ -1,0 +1,1 @@
+Some practice scripts used for trying out MosaicML
