@@ -55,6 +55,21 @@ def mark_as_used(variable: Any) -> Any:
     return variable
 
 
+class Cycler:
+    """A class that wraps a factory function, and returns an iterator that cycles through the factory function.
+    Note that this version does not handle empty iterables."""
+    def __init__(self, factory):
+        self.factory = factory
+
+    def __iter__(self):
+        it = iter(self.factory())
+        while True:
+            try:
+                yield next(it)
+            except StopIteration:
+                it = iter(self.factory())
+
+
 class DuckdbMixedMosaicDataset(IterableDataset):
     def __init__(self, db_path: str, mds_path: str):
         super().__init__()
@@ -67,7 +82,8 @@ class DuckdbMixedMosaicDataset(IterableDataset):
             self.db_path, read_only=True
         )  # readonly allows multiple processes to read the same db
         dataset = self.dataset
-        for mds_record in dataset:
+        cycler = Cycler(lambda: dataset)
+        for mds_record in cycler:
             local_conn = conn.cursor()  # each thread must start its own cursor
             # see https://duckdb.org/docs/guides/python/multiple_threads.html#reader-and-writer-functions for thread safety
 
